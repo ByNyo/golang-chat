@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"golang.org/x/net/websocket"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -57,7 +58,14 @@ func ListenForMessages(ws *websocket.Conn, buf *bufio.Reader, username string) {
 }
 
 func Connect(username string) (conn *websocket.Conn, err error) {
-	ws, err := websocket.Dial("ws://localhost:8080/ws?username="+username, "", "http://localhost/")
+	URL, err := url.Parse("ws://localhost:8080/ws")
+	if err != nil {
+		return nil, err
+	}
+	query := URL.Query()
+	query.Add("username", username)
+	URL.RawQuery = query.Encode()
+	ws, err := websocket.Dial(URL.Redacted(), "", "http://localhost/")
 	if err != nil {
 		return nil, err
 	}
