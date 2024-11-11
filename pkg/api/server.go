@@ -23,17 +23,18 @@ func NewServer() Server {
 func (s *server) HandleWS(ws *websocket.Conn) {
 	fmt.Println("incoming connection from client:", ws.RemoteAddr())
 	s.conns[ws] = true
-	fmt.Println(s.conns)
 	s.readLoop(ws)
 }
 
 func (s *server) broadcast(b []byte) {
 	for ws := range s.conns {
-		go func(ws *websocket.Conn) {
-			if _, err := ws.Write(b); err != nil {
-				fmt.Println("error writing to websocket:", err)
-			}
-		}(ws)
+		if s.conns[ws] {
+			go func(ws *websocket.Conn) {
+				if _, err := ws.Write(b); err != nil {
+					fmt.Println("error writing to websocket:", err)
+				}
+			}(ws)
+		}
 	}
 }
 
@@ -43,6 +44,7 @@ func (s *server) readLoop(ws *websocket.Conn) {
 		n, err := ws.Read(buf)
 		if err != nil {
 			if err == io.EOF {
+				delete(s.conns, ws)
 				break
 			}
 			fmt.Println("read error:", err)
